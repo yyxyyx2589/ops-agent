@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>评估报告 — Ops Agent 三基线对比</title>
+<style>
+  :root {
+    --bg: #f7f8fa; --panel: #ffffff; --border: #e4e7ed;
+    --text: #1f2329; --dim: #646a73;
+    --rag: #3370ff; --lora: #00b2a9; --agent: #7a3df0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); padding: 24px;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; }
+  header {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 20px;
+  }
+  header h1 { font-size: 20px; }
+  header a { font-size: 13px; color: var(--rag); text-decoration: none; }
+  .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px; margin-bottom: 18px;
+  }
+  .card h2 { font-size: 14px; color: var(--dim); margin-bottom: 16px; font-weight: 600; }
+
+  /* 柱状图 */
+  .chart { display: flex; justify-content: space-around; align-items: flex-end;
+           height: 220px; padding: 10px 0; }
+  .metric-group { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .bars { display: flex; gap: 14px; align-items: flex-end; height: 170px; }
+  .bar { width: 44px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+  .bar .val { font-size: 11px; color: var(--dim); margin-bottom: 3px; }
+  .bar .col { width: 100%; border-radius: 4px 4px 0 0; min-height: 2px; }
+  .bar .lbl { font-size: 10px; color: var(--dim); margin-top: 5px; text-align: center; }
+  .metric-name { font-size: 12px; font-weight: 600; }
+  .legend { display: flex; gap: 18px; justify-content: center; margin-top: 10px; }
+  .legend span { font-size: 12px; color: var(--dim); display: flex; align-items: center; gap: 5px; }
+  .dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+  /* 表格 */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+  th { color: var(--dim); font-weight: 600; font-size: 12px; }
+  td b { color: var(--agent); }
+  .best { color: #34c38f; font-weight: 700; }
+
+  /* 说明 */
+  .note p { font-size: 13px; color: var(--dim); line-height: 1.8; margin-bottom: 8px; }
+  .note b { color: var(--text); }
+  .empty { text-align: center; color: var(--dim); padding: 60px 0; font-size: 14px; }
+  .empty code { background: #f0f2f5; padding: 2px 6px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>三基线评估报告</h1>
+    <a href="/">← 返回对话</a>
+  </header>
+
+  <div id="content"><div class="empty">加载中…</div></div>
+</div>
+
+<script>
+const BASE_META = {
+  rag:      { name: "纯 RAG",   color: "#3370ff" },
+  rag_lora: { name: "RAG+LoRA", color: "#00b2a9" },
+  agent:    { name: "Agent",    color: "#7a3df0" },
+};
+const METRICS_CHART = [
+  { key: "answer_score_avg",   name: "端到端解决率" },
+  { key: "tool_accuracy_avg",  name: "工具选择准确率" },
+  { key: "param_accuracy_avg", name: "参数生成准确率" },
+];
+const METRICS_TABLE = [
+  { key: "answer_score_avg",   name: "端到端解决率",   fmt: v => (v*100).toFixed(1) + "%" },
+  { key: "tool_accuracy_avg",  name: "工具选择准确率", fmt: v => (v*100).toFixed(1) + "%" },
+  { key: "param_accuracy_avg", name: "参数生成准确率", fmt: v => (v*100).toFixed(1) + "%" },
+  { key: "turns_avg",          name: "平均轮次",       fmt: v => v.toFixed(2) },
+  { key: "latency_ms_avg",     name: "平均延迟",       fmt: v => v + " ms" },
+  { key: "count",              name: "测试条数",       fmt: v => v },
+];
+
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");}
+
+function renderChart(data){
+  const active = Object.keys(BASE_META).filter(bl => data[bl]);
+  let groups = "";
+  for(const m of METRICS_CHART){
+    let bars = "";
+    for(const bl of active){
+      const meta = BASE_META[bl];
+      const agg = data[bl] && data[bl].aggregate;
+      const val = agg ? (agg[m.key] || 0) : 0;
+      const h = Math.max(2, Math.round(val * 150));
+      bars += `<div class="bar">
+        <span class="val">${(val*100).toFixed(0)}%</span>
+        <div class="col" style="height:${h}px;background:${meta.color}"></div>
+        <span class="lbl">${meta.name}</span>
+      </div>`;
+    }
+    groups += `<div class="metric-group">
+      <div class="bars">${bars}</div>
+      <span class="metric-name">${m.name}</span>
+    </div>`;
+  }
+  const legend = active.map(bl =>
+    `<span><i class="dot" style="background:${BASE_META[bl].color}"></i>${BASE_META[bl].name}</span>`).join("");
+  return `<div class="card">
+    <h2>三基线对比（准确率类指标，越高越好）</h2>
+    <div class="chart">${groups}</div>
+    <div class="legend">${legend}</div>
+  </div>`;
+}
+
+function renderTable(data){
+  const cols = Object.keys(BASE_META).filter(bl => data[bl]);
+  let head = "<tr><th>指标</th>" + cols.map(bl => `<th>${BASE_META[bl].name}</th>`).join("") + "</tr>";
+  let rows = "";
+  for(const m of METRICS_TABLE){
+    // 找每行最优值（准确率类取最大，轮次/延迟取最小）
+    const vals = cols.map(bl => data[bl].aggregate[m.key]);
+    const isLowerBetter = m.key === "turns_avg" || m.key === "latency_ms_avg";
+    let best = isLowerBetter ? Math.min(...vals.filter(v=>v!==undefined))
+                             : Math.max(...vals.filter(v=>v!==undefined));
+    rows += `<tr><td>${m.name}</td>` + cols.map((bl, i) => {
+      const v = vals[i];
+      const cell = v === undefined ? "—" : m.fmt(v);
+      return `<td class="${v===best ? 'best':''}">${cell}</td>`;
+    }).join("") + "</tr>";
+  }
+  return `<div class="card"><h2>完整指标（绿色为最优基线）</h2>
+    <table>${head}${rows}</table></div>`;
+}
+
+function renderNote(){
+  return `<div class="card note">
+    <h2>方法论说明（面试讲这部分）</h2>
+    <p><b>测试集</b>：20 条运维问题，覆盖三类——知识类（Q01/Q02/Q05，期望 RAG 直答）、
+    诊断类（Q03/Q09/Q15，期望 Agent 调工具）、超纲类（Q07/Q10，期望拒答）。</p>
+    <p><b>三基线</b>：纯 RAG（只检索+直答）/ RAG+LoRA（本地 Qwen2.5-1.5B 微调基座）/
+    Agent（本项目：决策路由 + 工具循环）。</p>
+    <p><b>指标定义</b>：端到端解决率 = 答案命中标注要点的比例；工具选择准确率 =
+    期望工具集被实际调用的比例；参数准确率 = 工具参数与标注完全一致的比例；
+    平均轮次 = Agent 达到答案的工具调用次数；延迟 = 单题处理耗时。</p>
+    <p><b>预期结论</b>：知识类三基线接近；诊断类 Agent 显著优于纯 RAG（能查实时数据）；
+    超纲类只有 Agent 有拒答兜底（纯 RAG 会硬答产生幻觉）。</p>
+  </div>`;
+}
+
+fetch("/api/eval-report")
+  .then(r => r.json())
+  .then(data => {
+    const box = document.getElementById("content");
+    if(!data || Object.keys(data).length === 0){
+      box.innerHTML = `<div class="empty">
+        暂无评估数据。先运行：<br><br>
+        <code>python eval.py --baseline all</code><br><br>
+        （需要设置 DEEPSEEK_API_KEY，约消耗 ¥5 以内）
+      </div>` + renderNote();
+      return;
+    }
+    box.innerHTML = renderChart(data) + renderTable(data) + renderNote();
+  })
+  .catch(() => {
+    document.getElementById("content").innerHTML =
+      `<div class="empty">加载失败，请确认服务已启动</div>`;
+  });
+</script>
+</body>
+</html>

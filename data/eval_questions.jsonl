@@ -1,0 +1,20 @@
+{"qid":"Q01","question":"mysql too many connections 怎么办","expected_points":["max_connections","连接池"],"expected_tools":[]}
+{"qid":"Q02","question":"nginx 502 bad gateway 怎么排查","expected_points":["上游","超时"],"expected_tools":[]}
+{"qid":"Q03","question":"昨晚 web-01 为什么变慢","expected_points":[],"expected_tools":[{"name":"query_log","params":{"keyword":"nginx"}},{"name":"get_monitor_metrics","params":{"metric_type":"cpu"}}]}
+{"qid":"Q04","question":"磁盘满了怎么处理","expected_points":["df","清理"],"expected_tools":[]}
+{"qid":"Q05","question":"oom out of memory 排查","expected_points":["oom_score","killed"],"expected_tools":[]}
+{"qid":"Q06","question":"redis 连接被重置是什么原因","expected_points":[],"expected_tools":[{"name":"query_log","params":{"keyword":"redis"}}]}
+{"qid":"Q07","question":"你好","expected_points":[],"expected_tools":[]}
+{"qid":"Q08","question":"web-01 的 cpu 使用率多少","expected_points":[],"expected_tools":[{"name":"get_monitor_metrics","params":{"metric_type":"cpu","host":"web-01"}}]}
+{"qid":"Q09","question":"查一下 nginx 最近的报错日志","expected_points":[],"expected_tools":[{"name":"query_log","params":{"keyword":"nginx"}}]}
+{"qid":"Q10","question":"今天午饭吃什么","expected_points":[],"expected_tools":[]}
+{"qid":"Q11","question":"mysql 服务状态怎么样","expected_points":[],"expected_tools":[{"name":"run_diagnostic_command","params":{"command":"systemctl status mysql"}}]}
+{"qid":"Q12","question":"磁盘使用情况","expected_points":[],"expected_tools":[{"name":"run_diagnostic_command","params":{"command":"df"}}]}
+{"qid":"Q13","question":"内存够用吗","expected_points":[],"expected_tools":[{"name":"run_diagnostic_command","params":{"command":"free"}}]}
+{"qid":"Q14","question":"web-01 的磁盘占用","expected_points":[],"expected_tools":[{"name":"get_monitor_metrics","params":{"metric_type":"disk","host":"web-01"}}]}
+{"qid":"Q15","question":"java 进程为什么被杀","expected_points":["oom","内存"],"expected_tools":[{"name":"query_log","params":{"keyword":"oom"}}]}
+{"qid":"Q16","question":"网络连接数异常吗","expected_points":[],"expected_tools":[{"name":"run_diagnostic_command","params":{"command":"netstat"}}]}
+{"qid":"Q17","question":"nginx 上游超时怎么解决","expected_points":["上游","超时"],"expected_tools":[]}
+{"qid":"Q18","question":"帮我看看进程列表","expected_points":[],"expected_tools":[{"name":"run_diagnostic_command","params":{"command":"ps"}}]}
+{"qid":"Q19","question":"redis 连接重置","expected_points":[],"expected_tools":[{"name":"query_log","params":{"keyword":"redis"}}]}
+{"qid":"Q20","question":"docker 占了多少磁盘","expected_points":[],"expected_tools":[{"name":"get_monitor_metrics","params":{"metric_type":"disk"}}]}

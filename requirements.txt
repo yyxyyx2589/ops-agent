@@ -1,0 +1,8 @@
+openai>=1.0.0
+fastapi>=0.100.0
+uvicorn[standard]>=0.20.0
+chromadb>=0.5.0
+sentence-transformers>=2.2.0
+# 编排引擎（可选）：AGENT_ENGINE=langgraph 时走 agent_langgraph.py；
+# 不装也能跑，server/cli 是延迟导入，默认引擎仍是 agent.py 手写版。
+langgraph>=1.0.0

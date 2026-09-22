@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# 敏感（API key）
+.env
+config.toml
+
+# 评估产物：保留 eval_report*.json（README 与 /report 页引用），只忽略图片类产物
+reports/*.png
+reports/*.jpg
+
+# 个人内容（简历描述等，不进公开仓库）
+docs/简历项目描述.md
+
+# 数据库（可重新生成：python db/init_db.py + python db/init_chroma.py）
+db/ops.db
+data/chroma/
+
+# IDE
+.vscode/
+.idea/
+*.swp
