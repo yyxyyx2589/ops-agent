@@ -9,7 +9,9 @@ embedding 模型：paraphrase-multilingual-MiniLM-L12-v2
   - 需设 HF_HUB_OFFLINE=1 跳过 huggingface SSL 检查（模型已缓存）
 
 ChromaDB 持久化：./data/chroma/（本地文件，重启不丢）
-距离度量：cosine（余弦距离），sim = 1 - distance
+距离度量：collection 以 hnsw:space=cosine 建立，但 ChromaDB 返回的是
+          「归一化后的 squared L2 距离」，不能直接写 sim = 1 - distance。
+          验证查询与检索路径统一手算余弦相似度（见 tools/rag_search.py 的 _cosine_similarity）。
 
 运行：python db/init_chroma.py
 """
@@ -19,6 +21,8 @@ os.environ["TRANSFORMERS_OFFLINE"] = "1"
 
 import sys
 from pathlib import Path
+
+import numpy as np
 
 # 15 条运维知识库（覆盖 nginx/mysql/oom/disk/redis/java/docker/load/网络/JVM/systemctl/cpu）
 KB_DOCUMENTS = [
@@ -107,10 +111,14 @@ def main():
         results = collection.query(
             query_embeddings=q_emb,
             n_results=1,
-            include=["documents", "distances"])
+            include=["documents", "distances", "embeddings"])
         top_id = results["ids"][0][0]
-        dist = results["distances"][0][0]
-        sim = 1 - dist  # cosine distance → similarity
+        # 注意：hnsw:space=cosine 下 ChromaDB 返回的是「归一化后的 squared L2 距离」，
+        # 不是标准 cosine distance —— 直接写 1 - dist 会算出负数。这里手算余弦相似度，
+        # 与 tools/rag_search.py 的 _cosine_similarity 保持一致。
+        qv = np.asarray(q_emb[0], dtype=float)
+        kv = np.asarray(results["embeddings"][0][0], dtype=float)
+        sim = float(np.dot(qv, kv) / (np.linalg.norm(qv) * np.linalg.norm(kv)))
         print(f"  q={q:30} top={top_id} sim={sim:.3f}")
 
     print(f"\nChromaDB 初始化完成: {chroma_path}")

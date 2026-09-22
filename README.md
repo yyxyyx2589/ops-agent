@@ -41,13 +41,26 @@
 
 ## 快速开始
 
+> **首次克隆后必须先初始化数据**：`db/ops.db`（真实日志与监控指标）和 `data/chroma/`（向量库）
+> 体积较大、可由脚本确定性重建，因此未纳入版本库。跳过这步会因为查不到数据而失败。
+
 ```bash
-# 环境
+# 1. 环境
 conda create -n ops-agent python=3.11 -y && conda activate ops-agent
 pip install -r requirements.txt
 
-# API key（DeepSeek）
+# 2. API key（DeepSeek）——二选一
+#    方式 A：写进项目根目录 .env（推荐，换终端不用重设）
+cp .env.example .env && vim .env        # 填入 DEEPSEEK_API_KEY=sk-xxx
+#    方式 B：临时环境变量
 export DEEPSEEK_API_KEY=sk-你的key
+
+# 3. 初始化数据（首次克隆必做，零 API 消耗）
+python db/init_db.py       # 生成 SQLite：nginx/mysql/OOM/磁盘告警日志 + web-01 监控指标
+python db/init_chroma.py   # 构建 ChromaDB 向量库：15 条运维知识 + 余弦相似度自检
+
+# 4. 自检（跑测试 + 三条路由真实验证，需要 API key）
+python verify.py
 
 # 命令行版
 python cli.py
@@ -62,6 +75,14 @@ python compare_engines.py "web-01 这台机器为什么变慢？"
 # Web 版（SSE 流式 + 前端）
 uvicorn server:app --reload --port 8000
 # 浏览器打开 http://localhost:8000
+```
+
+初始化脚本输出示例（第 3 步）：
+
+```
+数据库初始化完成: .../db/ops.db
+ChromaDB 初始化完成: .../data/chroma
+  q=mysql 连接数打满                 top=kb-002 sim=0.834
 ```
 
 ## 工具说明
@@ -82,6 +103,8 @@ uvicorn server:app --reload --port 8000
 | KW_COVERAGE_LOW | 0.30 | 关键词覆盖率下限 |
 
 ## 测试
+
+> 需先完成「快速开始」第 3 步的数据初始化，否则 `query_log` 查不到日志、mock 测试会断言失败。
 
 ```bash
 # 主循环逻辑测试（mock LLM，零 API 消耗）
