@@ -3,6 +3,25 @@
 基于 Function Calling 的运维 Agent，把"RAG 检索置信度"升级为"决策路由信号"，
 实现 **同一业务从 RAG → Agent 的演进**（LoRA 为独立微调验证线）。
 
+![Agent 循环：查真实日志并给出结论](docs/images/01-agent-loop.png)
+
+> 一次真实对话（非示意图）：路由判定为 **Agent 循环**（sim=0.58、kw=0.17），
+> Agent 自主调用 `query_log` 检索 72 小时 nginx 日志，识别出 2 条真实 `upstream timed out` 报错，
+> 右侧同步展示本次路由信号与知识库溯源片段。
+
+<details>
+<summary><b>更多界面截图（RAG 直答 / 三基线评估报告）</b></summary>
+
+**RAG 直答**：高置信命中知识库时绕过 Agent 直接作答，工具调用数为 0，右侧亮出溯源片段。
+
+![RAG 直答](docs/images/02-rag-direct.png)
+
+**三基线评估报告**（`/report` 页）：纯 RAG vs Agent 的端到端解决率、工具选择准确率、参数生成准确率对比。
+
+![三基线评估报告](docs/images/03-eval-report.png)
+
+</details>
+
 ## 架构
 
 ```
